@@ -2,15 +2,23 @@
 #split into chunks 
 #create the embeddings 
 #store into chroma 
+import os
+
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings 
+from langchain_community.embeddings import HuggingFaceEmbeddings 
 from langchain_community.vectorstores import Chroma 
 from dotenv import load_dotenv
 
 load_dotenv()
 
-data = PyPDFLoader("document loaders/deeplearning.pdf")
+pdf_path = "document loaders/deeplearning.pdf"
+if not os.path.exists(pdf_path):
+    raise SystemExit(
+        f"PDF not found at '{pdf_path}'. Update the path or add the file before running."
+    )
+
+data = PyPDFLoader(pdf_path)
 docs = data.load()
 
 splitter = RecursiveCharacterTextSplitter(
@@ -20,10 +28,12 @@ splitter = RecursiveCharacterTextSplitter(
 
 chunks = splitter.split_documents(docs)
 
-embedding_model = OpenAIEmbeddings()
+embedding_model = HuggingFaceEmbeddings()
 
 vectorstore = Chroma.from_documents(
     documents= chunks,
     embedding=embedding_model,
-    persist_directory="chroma_db"
+    persist_directory="chroma_db_hf"
 )
+
+vectorstore.persist()

@@ -5,7 +5,7 @@ import os
 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_mistralai import ChatMistralAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -13,7 +13,19 @@ from langchain_core.prompts import ChatPromptTemplate
 
 load_dotenv()
 
+def _require_env_vars(required_keys: list[str]) -> None:
+    missing = [key for key in required_keys if not os.getenv(key)]
+    if missing:
+        st.error(
+            "Missing required environment variables: "
+            + ", ".join(missing)
+            + ". Add them to your .env file and restart the app."
+        )
+        st.stop()
+
 st.set_page_config(page_title="RAG Book Assistant")
+
+_require_env_vars(["MISTRAL_API_KEY"])
 
 st.title("📚 RAG Book Assistant")
 st.write("Upload a PDF and ask questions from the document")
@@ -43,12 +55,12 @@ if uploaded_file:
 
             chunks = splitter.split_documents(docs)
 
-            embeddings = OpenAIEmbeddings()
+            embeddings = HuggingFaceEmbeddings()
 
             vectorstore = Chroma.from_documents(
                 documents=chunks,
                 embedding=embeddings,
-                persist_directory="chroma_db"
+                persist_directory="chroma_db_hf"
             )
 
             vectorstore.persist()
@@ -57,12 +69,12 @@ if uploaded_file:
 
 
 
-if os.path.exists("chroma_db"):
+if os.path.exists("chroma_db_hf"):
 
-    embeddings = OpenAIEmbeddings()
+    embeddings = HuggingFaceEmbeddings()
 
     vectorstore = Chroma(
-        persist_directory="chroma_db",
+        persist_directory="chroma_db_hf",
         embedding_function=embeddings
     )
 

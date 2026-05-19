@@ -1,15 +1,33 @@
+import os
 from dotenv import load_dotenv
-from langchain_openai import OpenAIEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_mistralai import ChatMistralAI
 from langchain_core.prompts import ChatPromptTemplate
 
 load_dotenv()
 
-embedding_model = OpenAIEmbeddings()
+def _require_env_vars(required_keys: list[str]) -> None:
+    missing = [key for key in required_keys if not os.getenv(key)]
+    if missing:
+        raise SystemExit(
+            "Missing required environment variables: "
+            + ", ".join(missing)
+            + ". Add them to your .env file and rerun."
+        )
+
+_require_env_vars(["MISTRAL_API_KEY"])
+
+if not os.path.exists("chroma_db_hf"):
+    raise SystemExit(
+        "Missing 'chroma_db_hf' directory. Run create_database.py or the Streamlit app's "
+        "'Create Vector Database' step first."
+    )
+
+embedding_model = HuggingFaceEmbeddings()
 
 vectorstore = Chroma(
-    persist_directory= "chroma_db",
+    persist_directory= "chroma_db_hf",
     embedding_function=embedding_model
 )
 
